@@ -12,6 +12,7 @@
         <maven.compiler.release>17</maven.compiler.release>
         <junit.jupiter.version>5.11.4</junit.jupiter.version>
         <jqwik.version>1.9.2</jqwik.version>
+        <targetTests>dojo.supermarket.*</targetTests>
     </properties>
 
     <dependencies>
@@ -71,9 +72,6 @@
                     <targetClasses>
                         <param>dojo.supermarket.model.*</param>
                     </targetClasses>
-                    <targetTests>
-                        <param>dojo.supermarket.*</param>
-                    </targetTests>
                     <outputFormats>
                         <param>HTML</param>
                     </outputFormats>
