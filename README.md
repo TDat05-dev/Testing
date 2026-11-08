@@ -1,46 +1,139 @@
-_Support this and all my katas via [Patreon](https://www.patreon.com/EmilyBache)_
+# Đồ án Kiểm thử phần mềm: Property-Based Testing
 
-# The Supermarket Receipt Refactoring Kata
+Nghiên cứu và ứng dụng **Property-Based Testing (PBT)** bằng **jqwik**, so sánh với **Example-Based Testing (JUnit 5)** thông qua **mutation testing (PIT)**.
 
-Watch the ["Detangle Bad Code Challenge"](https://youtu.be/EWB-VhEUoHE) introduction to this exercise.
+Hệ thống thực nghiệm: bản Java của [SupermarketReceipt-Refactoring-Kata](https://github.com/emilybache/SupermarketReceipt-Refactoring-Kata) (Emily Bache, giấy phép MIT – xem `license.txt`). Đây là hệ thống tính hóa đơn siêu thị gồm giỏ hàng, bảng giá và 4 loại khuyến mãi.
 
-This is a variation of a popular kata described in http://codekata.com/kata/kata01-supermarket-pricing/. The aim of the exercise is to build automated tests for this code, refactor it, and add a new feature. 
+- **Jira:** https://doankiemthu.atlassian.net (project `KAN`)
 
-The supermarket has a catalog with different types of products (rice, apples, milk, toothbrushes,...). Each product has a price, and the total price of the shopping cart is the total of all the prices of the items. You get a receipt that details the items you've bought, the total price and any discounts that were applied.
+## Thành viên
 
-The supermarket runs special deals, e.g.
- - Buy two toothbrushes, get one free. Normal toothbrush price is €0.99
- - 20% discount on apples, normal price €1.99 per kilo.
- - 10% discount on rice, normal price €2.49 per bag
- - Five tubes of toothpaste for €7.49, normal price €1.79
- - Two boxes of cherry tomatoes for €0.99, normal price €0.69 per box.
+| Vai trò | Thành viên | Package / phần việc |
+|---|---|---|
+| TV1 – Lý thuyết, báo cáo, gài lỗi | Phạm Lê Phú | Báo cáo, slide, nhánh lỗi gài (giữ riêng) |
+| TV2 – Setup, Example-Based Testing | Đạt Nguyễn Lê Tiến | `example` |
+| TV3 – Generator, Property-Based Testing | Quân Trần Hoàng | `generators`, `property` |
+| TV4 – Stateful testing, đánh giá | Khanh Nguyễn Thạch Bảo | `stateful`, chạy PIT |
 
-These are just examples: the actual special deals change each week.
+## Cần cài trên máy
 
-Create some test cases and aim to get good enough code coverage that you feel confident to do some refactoring.
+| Công cụ | Ghi chú |
+|---|---|
+| **JDK 17+** (khuyên dùng Temurin 21) | https://adoptium.net |
+| **IntelliJ IDEA** (Community là đủ) | Có sẵn Maven bên trong |
+| **Git** | Git for Windows |
+| Maven dòng lệnh | Không bắt buộc – chỉ cần nếu muốn gõ `mvn` trong Terminal |
 
-When you have good test cases, identify code smells such as Long Method, Feature Envy. Apply relevant refactorings.
+Thư viện (JUnit 5, jqwik, ApprovalTests, PIT) **không cần cài tay**: Maven tự tải theo `java/pom.xml` ở lần chạy đầu (cần có mạng).
 
-When you're confident you can handle this code, implement the new feature described below
+## Bắt đầu
 
-## New feature: discounted bundles
+```powershell
+git clone https://github.com/TDat05-dev/Testing.git
+```
 
-The owner of the system has a new feature request. They want to introduce a new kind of special offer - bundles. When you buy all the items in a product bundle
-you get 10% off the total for those items. For example you could make a bundle offer of one toothbrush and one toothpaste. If you then you buy one toothbrush and one toothpaste, the discount will be 10% of €0.99 + €1.79. If you instead buy two toothbrushes and one toothpaste, you get the same discount as if you'd bought only one of each - ie only complete bundles are discounted.
+Trong IntelliJ: **File → Open → chọn thư mục `Testing\java` → Open as Project**.
 
-## New feature: HTML receipt
+> ⚠️ Mở thư mục **`java`**, không mở thư mục gốc `Testing` – nếu không IntelliJ sẽ không nhận Maven project.
 
-Currently we print a traditional ticket receipt. Now being a modern business we'd
-like to be able to print or send a HTML version of the same receipt. All the data 
-and number formatting should be the same. However the layout should be html. 
-You don't have to worry about the HTML template - a designer will care of that - but 
-we do need someone to keep duplication between the reports to a bare minimum.
+Đợi IntelliJ tải thư viện xong, rồi chạy **Maven → Lifecycle → test**. Thấy `BUILD SUCCESS` là xong.
 
-## Start with the refactoring
+## Chạy test
 
-If you would like to just do the refactoring part of this exercise, you can instead check out the 'with_tests' branch. 
-Those tests have reasonably good coverage and should support most kinds of refactorings you'd like to do.
+> ⚠️ Mọi lệnh `mvn` phải chạy **trong thư mục `java/`** (nơi có `pom.xml`).
 
-## Use this exercise in a Learning Hour
+```powershell
+cd java
+mvn test
+```
 
-You can use the [Supermarket Receipt](https://sammancoaching.org/kata_descriptions/supermarket_receipt.html) Kata in learning hours if you are using the [Samman](https://sammancoaching.org) coaching method.
+Hoặc trong IntelliJ: bấm ▶ cạnh tên class / method test.
+
+## Chạy PIT (mutation testing)
+
+```powershell
+cd java
+
+# Toàn bộ test
+mvn test-compile org.pitest:pitest-maven:mutationCoverage
+
+# Chỉ bộ Example-Based
+mvn test-compile org.pitest:pitest-maven:mutationCoverage "-DtargetTests=dojo.supermarket.example.*"
+
+# Chỉ bộ Property-Based (property + stateful)
+mvn test-compile org.pitest:pitest-maven:mutationCoverage "-DtargetTests=dojo.supermarket.property.*,dojo.supermarket.stateful.*"
+```
+
+Báo cáo: mở `java/target/pit-reports/index.html` bằng trình duyệt.
+
+> Trên PowerShell phải để **cả cụm** `"-DtargetTests=..."` trong dấu nháy kép.
+> Mỗi lần chạy sẽ **ghi đè** báo cáo cũ – chụp hoặc copy kết quả trước khi chạy bộ tiếp theo.
+
+| Chỉ số trong log | Ý nghĩa |
+|---|---|
+| `Killed X (Y%)` | Mutation score – tỉ lệ lỗi đột biến bị test bắt được (chỉ số chính để so sánh) |
+| `Mutations with no coverage` | Đột biến ở dòng code không test nào chạy qua |
+| `Test strength` | Tỉ lệ bắt được trong số đột biến mà test có chạy qua (đo độ chặt của assert) |
+
+## Cấu trúc thư mục
+
+```
+java/
+├── pom.xml
+└── src/
+    ├── main/java/dojo/supermarket/model/      ← code nghiệp vụ gốc – KHÔNG SỬA
+    └── test/java/dojo/supermarket/
+        ├── model/        FakeCatalog (dùng chung), SupermarketTest (test gốc của kata)
+        ├── example/      Example-Based tests (JUnit)            – TV2
+        ├── generators/   SupermarketGenerators (jqwik Arbitrary) – TV3, dùng chung
+        ├── property/     Property tests (@Property)              – TV3
+        └── stateful/     Stateful / model-based tests            – TV4
+```
+
+## Quy ước
+
+### Đặt tên file test
+
+| Loại | Tên file | Ví dụ |
+|---|---|---|
+| Example-Based (JUnit `@Test`) | `...Test.java` | `ThreeForTwoTest.java` |
+| Property / Stateful (jqwik `@Property`) | `...Properties.java` | `OfferProperties.java` |
+
+> Maven chỉ chạy file có đuôi `Test`, `Tests` hoặc `Properties`. Đặt tên khác → test **không chạy** dù vẫn `BUILD SUCCESS`.
+
+- Test chỉ gọi **public API** (`Teller`, `ShoppingCart`, `Receipt`...) – kiểm thử hộp đen.
+- Generator đặt trong `generators/SupermarketGenerators`, không viết lại trong từng file test.
+
+### Git
+
+- Mỗi người làm trên **nhánh riêng** (TV2: `tdat`), không commit thẳng vào `main`.
+- Làm xong một task → `git push` → mở **Pull Request vào `main`** → có người review → merge.
+- Commit message bắt đầu bằng **mã Jira**, ví dụ: `KAN-34: thêm property tổng tiền ≥ 0`.
+- Trước khi bắt đầu task mới, cập nhật nhánh:
+  ```powershell
+  git checkout main
+  git pull
+  git checkout <nhánh-của-mình>
+  git merge main
+  ```
+- Trước khi push: `mvn test` phải xanh. Property **cố ý fail** để ghi nhận lỗi thật của code gốc thì đánh dấu `@Disabled("KAN-xx: lý do")`.
+
+### Jira
+
+- Kéo issue qua **To Do → In Progress → Done** khi làm.
+- Lỗi do PBT tìm ra: ghi vào issue tương ứng gồm **tên property, phản ví dụ sau Shrinking, seed**.
+
+### Kiểm thử mù
+
+TV1 gài lỗi vào code trên một nhánh **không đẩy lên repo này** cho đến khi bộ test của nhóm đã được **đóng băng**. Không ai hỏi hay xem trước danh sách lỗi gài.
+
+## Lỗi thường gặp
+
+| Thông báo | Cách xử lý |
+|---|---|
+| `there is no POM in this directory` | Chưa `cd java` |
+| `Cannot resolve symbol 'Property'` / `'Assertions'` | File test đặt nhầm trong `src/main` – chuyển sang `src/test` |
+| Không có tab Maven / không hiện ▶ | Mở sai thư mục – mở lại thư mục `java` bằng Open as Project |
+| `Plugin ... not found` (gạch đỏ trong `pom.xml`) | Chạy lệnh PIT một lần để Maven tải plugin, rồi Reload |
+| Test mới viết không chạy khi `mvn test` | Tên file chưa kết thúc bằng `Test` hoặc `Properties` |
+| `Connection timed out` khi tải thư viện | Mạng chặn Maven Central – đổi mạng (4G) rồi chạy lại |
