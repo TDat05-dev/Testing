@@ -1,6 +1,7 @@
 package dojo.supermarket.generators;
 
 import dojo.supermarket.model.ProductUnit;
+import dojo.supermarket.model.SpecialOfferType;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -24,6 +25,10 @@ public final class SupermarketGenerators {
     /** Một dòng hàng trong giỏ: đơn vị bán + đơn giá + số lượng mua. */
     public record Line(ProductUnit unit, double unitPrice, double quantity) {
     }
+
+    public record OfferSpec(SpecialOfferType type, double argument) { }
+
+    public record OfferedLine(Line line, OfferSpec offer) { }
 
     /** Đơn giá dương, làm tròn 2 chữ số thập phân như giá tiền thật. */
     public static Arbitrary<Double> unitPrices() {
@@ -60,5 +65,22 @@ public final class SupermarketGenerators {
     /** Giỏ hàng: danh sách 0..10 dòng hàng. */
     public static Arbitrary<List<Line>> carts() {
         return lines().list().ofMaxSize(MAX_LINES_PER_CART);
+    }
+
+    /** Combo prices may exceed regular prices so tests can detect harmful offers. */
+    public static Arbitrary<OfferSpec> offers() {
+        return Arbitraries.oneOf(
+                Arbitraries.just(new OfferSpec(SpecialOfferType.THREE_FOR_TWO, 0)),
+                Arbitraries.integers().between(1, 100).map(p -> new OfferSpec(SpecialOfferType.TEN_PERCENT_DISCOUNT, p)),
+                unitPrices().map(p -> new OfferSpec(SpecialOfferType.TWO_FOR_AMOUNT, p)),
+                unitPrices().map(p -> new OfferSpec(SpecialOfferType.FIVE_FOR_AMOUNT, p)));
+    }
+
+    public static Arbitrary<OfferedLine> offeredLines() {
+        return Combinators.combine(lines(), offers().injectNull(0.25)).as(OfferedLine::new);
+    }
+
+    public static Arbitrary<List<OfferedLine>> cartsWithOffers() {
+        return offeredLines().list().ofMaxSize(MAX_LINES_PER_CART);
     }
 }
