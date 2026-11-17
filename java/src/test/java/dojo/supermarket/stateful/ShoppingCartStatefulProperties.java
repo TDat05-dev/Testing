@@ -8,17 +8,22 @@ import dojo.supermarket.model.ShoppingCart;
 import dojo.supermarket.model.SpecialOfferType;
 import dojo.supermarket.model.Teller;
 import net.jqwik.api.*;
+import net.jqwik.api.constraints.DoubleRange;
+import net.jqwik.api.constraints.IntRange;
 import net.jqwik.api.state.Action;
 import net.jqwik.api.state.ActionChain;
 import net.jqwik.api.state.Transformer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class ShoppingCartStatefulProperties {
+public class ShoppingCartStatefulProperties {
 
     private static final double EPS = 1e-6;
 
-    /** Hệ thống thật + model, cùng cấu hình sản phẩm/khuyến mãi. */
+    /**
+     * Hệ thống thật + model, cùng cấu hình sản phẩm và khuyến mãi.
+     */
     static final class CartState {
         final FakeCatalog catalog = new FakeCatalog();
         final Teller teller = new Teller(catalog);
@@ -42,7 +47,9 @@ class ShoppingCartStatefulProperties {
         }
     }
 
-    /** Thao tác: thêm một sản phẩm ngẫu nhiên với số lượng nguyên 1..12, rồi checkout và so với model. */
+    /**
+     * Thao tác: thêm sản phẩm ngẫu nhiên (số lượng nguyên 1..12), checkout, so với model.
+     */
     static class AddItemAction implements Action.Independent<CartState> {
         @Override
         public Arbitrary<Transformer<CartState>> transformer() {
@@ -72,19 +79,62 @@ class ShoppingCartStatefulProperties {
                 .withMaxTransformations(15);
     }
 
+    /**
+     * Stateful: chuỗi thao tác thêm hàng ngẫu nhiên, sau mỗi bước so hóa đơn với CartModel.
+     */
     @Property
     void cartMatchesModel(@ForAll("chains") ActionChain<CartState> chain) {
         chain.run();
     }
-    @Disabled("KAN-45: chấp nhận số lượng âm")
+
+    /**
+     * THREE_FOR_TWO, số lượng nguyên >= 3: đúng 1 dòng giảm giá, trị giá = (q/3) x đơn giá.
+     */
     @Property
-    void totalNeverNegative(@ForAll @net.jqwik.api.constraints.IntRange(min = -20, max = 20) int qty) {
+    void threeForTwoProducesDiscountLine(@ForAll @IntRange(min = 3, max = 30) int qty) {
+        FakeCatalog catalog = new FakeCatalog();
+        Product p = new Product("sp0", ProductUnit.EACH);
+        catalog.addProduct(p, 1.00);
+        Teller teller = new Teller(catalog);
+        teller.addSpecialOffer(SpecialOfferType.THREE_FOR_TWO, p, 0);
+        ShoppingCart cart = new ShoppingCart();
+        cart.addItemQuantity(p, qty);
+
+        Receipt receipt = teller.checksOutArticlesFrom(cart);
+
+        assertEquals(1, receipt.getDiscounts().size());
+        assertEquals(qty / 3, -receipt.getDiscounts().get(0).discountAmount(), EPS);
+    }
+
+    /**
+     * THREE_FOR_TWO, số lượng dưới 3 (kể cả hàng KILO): không được có dòng giảm giá.
+     */
+    @Property
+    void threeForTwoNoDiscountBelowThree(@ForAll @DoubleRange(min = 0.1, max = 2.9) double qty) {
+        FakeCatalog catalog = new FakeCatalog();
+        Product p = new Product("sp0", ProductUnit.KILO);
+        catalog.addProduct(p, 1.00);
+        Teller teller = new Teller(catalog);
+        teller.addSpecialOffer(SpecialOfferType.THREE_FOR_TWO, p, 0);
+        ShoppingCart cart = new ShoppingCart();
+        cart.addItemQuantity(p, qty);
+
+        assertTrue(teller.checksOutArticlesFrom(cart).getDiscounts().isEmpty());
+    }
+
+    /**
+     * KAN-45: số lượng âm làm tổng tiền âm (lỗi thật của mã gốc).
+     * Phạm vi 2001 giá trị > số lần thử mặc định nên jqwik sinh ngẫu nhiên, có shrinking thật.
+     */
+    @Disabled("KAN-45: addItemQuantity chấp nhận số lượng âm")
+    @Property
+    void totalNeverNegative(@ForAll @IntRange(min = -1000, max = 1000) int qty) {
         FakeCatalog catalog = new FakeCatalog();
         Product p = new Product("sp0", ProductUnit.EACH);
         catalog.addProduct(p, 1.00);
         ShoppingCart cart = new ShoppingCart();
         cart.addItemQuantity(p, qty);
-        org.junit.jupiter.api.Assertions.assertTrue(
-                new Teller(catalog).checksOutArticlesFrom(cart).getTotalPrice() >= -EPS);
+
+        assertTrue(new Teller(catalog).checksOutArticlesFrom(cart).getTotalPrice() >= -EPS);
     }
 }
