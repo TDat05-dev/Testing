@@ -58,7 +58,7 @@ class OfferProperties {
     @Property void addingTwiceMatchesAddingDouble(@ForAll("carts") List<OfferedLine> cart) {
         assertEquals(checkout(cart, true, false, false).getTotalPrice(), checkout(cart, true, false, true).getTotalPrice(), EPS);
     }
-    @Disabled("Combo price may exceed regular price; see property-findings.md")
+    @Disabled("KAN-44: vi phạm QT6")
     @Property void offerNeverRaisesTotal(@ForAll("carts") List<OfferedLine> cart) {
         assertTrue(checkout(cart, true, false, false).getTotalPrice() <= checkout(cart, false, false, false).getTotalPrice() + EPS);
     }
@@ -66,18 +66,18 @@ class OfferProperties {
         double expected = line.quantity() * line.unitPrice() * (1 - percent / 100.0);
         assertEquals(expected, single(line, new OfferSpec(SpecialOfferType.TEN_PERCENT_DISCOUNT, percent)).getTotalPrice(), EPS);
     }
-    @Disabled("Fractional KILO quantities lose the remainder; see property-findings.md")
+    @Disabled("KAN-43: vi phạm QT4")
     @Property void threeForTwoMatchesFormula(@ForAll("lines") Line line) {
         double expected = (line.quantity() - Math.floor(line.quantity() / 3)) * line.unitPrice();
         assertEquals(expected, single(line, new OfferSpec(SpecialOfferType.THREE_FOR_TWO, 0)).getTotalPrice(), EPS);
     }
-    @Disabled("Fractional KILO quantities lose the remainder; see property-findings.md")
+    @Disabled("KAN-52: vi phạm QT5")
     @Property void twoForAmountMatchesFormula(@ForAll("lines") Line line, @ForAll("prices") double price) {
         double groups = Math.floor(line.quantity() / 2);
         double expected = groups * price + (line.quantity() - groups * 2) * line.unitPrice();
         assertEquals(expected, single(line, new OfferSpec(SpecialOfferType.TWO_FOR_AMOUNT, price)).getTotalPrice(), EPS);
     }
-    @Disabled("Fractional KILO quantities lose the remainder; see property-findings.md")
+    @Disabled("KAN-52: vi phạm QT5")
     @Property void fiveForAmountMatchesFormula(@ForAll("lines") Line line, @ForAll("prices") double price) {
         double groups = Math.floor(line.quantity() / 5);
         double expected = groups * price + (line.quantity() - groups * 5) * line.unitPrice();
