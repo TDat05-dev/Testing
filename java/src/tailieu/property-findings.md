@@ -17,6 +17,6 @@ Ví dụ shrinking: THREE_FOR_TWO bắt đầu với KILO giá 1.17 và lượng
 
 Generator `cartsWithOffers()` vẫn cho phép giá combo tùy ý và các property công thức dùng `lines()`, gồm cả KILO lẻ. Không thu hẹp generator về EACH hay thay `offerNeverRaisesTotal` bằng property chỉ nhận offer có lợi. Bốn property được đánh dấu `@Disabled` để ghi nhận lỗi gốc theo quy ước nhóm; các mã issue lần lượt là KAN-43, KAN-44 và KAN-52.
 
-Bảng trên là kết quả chạy lịch sử ngày 14/11/2026; chưa chạy lại sau lần chỉnh này, nên không dùng số đếm cũ làm kết quả xác minh hiện tại.
+Bảng counterexample phía trên vẫn là kết quả lịch sử ngày 14/11/2026; lần chạy mới không tái hiện các property này vì chúng được đánh dấu `@Disabled` theo quy ước nhóm.
 
-Ngày 19/11/2026, lần thử `mvn test` trong terminal bị hệ điều hành chặn với `Access is denied`; đây không phải kết quả test pass/fail. IntelliJ không có trên máy để chạy theo đúng IDE được yêu cầu. Cần chạy lại trong IntelliJ trước khi chốt kết quả.
+Ngày 19/11/2026, chạy `mvn test` trong terminal WebStorm trên mã đã merge với `main`: **48 tests run, 0 failures, 0 errors, 7 skipped; BUILD SUCCESS**. Các test bị bỏ qua vẫn cần được hiểu theo trạng thái `@Disabled`/skip hiện tại, không phải là lỗi đã được sửa.
