@@ -13,21 +13,37 @@ public class Teller {
         this.catalog = catalog;
     }
 
-    public void addSpecialOffer(SpecialOfferType offerType, Product product, double argument) {
-        offers.put(product, new Offer(offerType, product, argument));
+    public void addSpecialOffer(
+            SpecialOfferType offerType,
+            Product product,
+            double argument
+    ) {
+        offers.put(
+                product,
+                new Offer(offerType, product, argument)
+        );
     }
 
     public Receipt checksOutArticlesFrom(ShoppingCart theCart) {
         Receipt receipt = new Receipt();
         List<ProductQuantity> productQuantities = theCart.getItems();
-        for (ProductQuantity pq: productQuantities) {
+
+        for (ProductQuantity pq : productQuantities) {
             Product p = pq.product();
             double quantity = pq.quantity();
             double unitPrice = catalog.getUnitPrice(p);
-            double price = quantity * unitPrice;
-            receipt.addProduct(p, quantity, unitPrice, price);
+            double price = Math.floor(quantity) * unitPrice;
+
+            receipt.addProduct(
+                    p,
+                    quantity,
+                    unitPrice,
+                    price
+            );
         }
+
         theCart.handleOffers(receipt, offers, catalog);
+        offers.clear();
 
         return receipt;
     }
